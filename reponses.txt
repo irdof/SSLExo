@@ -1,0 +1,100 @@
+
+hello.txt contient toujours : "Hello world"
+===============================================================================
+1.
+Commande : openssl enc -e -rc4 -in hello.txt -out hello1.enc
+          -pass pass:123456789
+          openssl enc -e -rc4 -in hello.txt -out hello2.enc
+          -pass pass:123456789
+                    -out hello2.enc -K 123456789
+        le fichier hello.txt contient : Hello word
+                   hello1.txt contient : Salted__szP½•¯ãsb]¾Æt–­"ë
+                   hello2.txt contient : Salted__Å¿ÔŸ¨ »¢å:þ\T
+===============================================================================
+2.
+Commande : openssl enc -e -rc4 -in hello.txt -out hello2.enc
+          -pass pass:123456789 -nosalt
+          
+          hello.txt : Hello world (11 caractères)
+          hello2.enc : “%E,Úù'mÁ€ (11 caractères)
+          DC2 est un seul caractère
+===============================================================================
+3.      
+Commande : openssl enc -e -rc4 -in hello2.enc -out hello.txt
+          -pass pass:123456789 -nosalt 
+
+          hello2.enc : “%E,Úù'mÁ€
+          hello.txt : Hello world
+          
+          Ceci montre bien que l'enchiffrement et le déchiffrement
+          est la même opération, car ici l'enchifremment a été
+          répété 2, une fois pour obtenir hello2.enc(hello.txt-->hello2.enc)
+          et une fois pour obtenir hello.txt(hello2.enc-->hello.txt) et on 
+		  se retrouve avec le fichier de base.
+          
+===============================================================================
+4.      
+Commande : openssl enc -e -rc4 -in hello.txt -out
+			hello1.enc  -nosalt -K 123456789
+			
+			openssl enc -e -rc4 -in hello.txt -out
+			hello2.enc  -nosalt -K 123456789
+			
+			résultat format HEX :
+			
+			hello1.enc : 65 12 1c d8 91 f9 18 56 ab 02
+			hello2.enc : 65 12 1c d8 91 f9 18 56 ab 02
+===============================================================================
+5.
+Commande : 	openssl enc -e -rc4 -in hello.txt -out hello1.enc
+			-pass pass:abc1234 -nosalt
+			
+			openssl enc -e -rc4 -in hello.txt -out hello2.enc
+			-pass pass:abc1234 -nosalt
+			
+			résultat format HEX :
+			
+			hello1.enc : c5 50 d2 ec ae 6f b8 2f 37 b9 a5
+
+			hello2.enc : c5 50 d2 ec ae 6f b8 2f 37 b9 a5			
+===============================================================================
+6.
+Commande : 	openssl enc -e -rc4 -in hello.txt -out hello1.enc
+			-pass pass:abc1234 -nosalt 
+			
+				On obtient le fichier suivant 
+	  hello1.enc : c5 50 d2 ec ae 6f b8 2f 37 b9 a5
+		
+       le 50 ='P' si on le remplace par 49 on a en bit 
+	   50 = 0101 0000 et 51 = 0101 0001
+	   On s'attend donc que la deuxième lettre du fichier hello.txt
+	   change. C'est à dire que le 'e' = 65 = 0110 0101 devienne
+	   'd' = 64 = 0110 0100
+
+		On rentre la commande : openssl enc -d -rc4 -in hello1.enc -out
+								hello.txt -pass pass:abc1234 -nosalt
+								
+		hello.txt contient maintenant : "Hdllo world"	comme prévu
+===============================================================================
+7.
+Commande : openssl rc4 -e -K 123456789 -in hello.txt -out ca.enc 
+			
+			ca.enc : 65 12 1c d8 91 f9 18 56 28 ab 02
+			
+			le fichier hello2.txt : goodMorning :
+			67 6f 6f 64 4d 6f 72 6e 69 6e 67
+			on rentre la commande :
+			openssl rc4 -e -K 123456789 -in hello2.txt -out cb.enc
+			
+			cb.enc : 4a 18 1f d0 b3 b6 1d 57 33 a9 01
+			key.bin : hello.txt XOR ca.enc : 4ec7770b4fed96f395ac766
+			
+			reconstruction : cb.enc xor key.bin  
+							: 4a66f6f644d6f726e696e67
+							
+          
+          
+          
+          
+          
+          
