@@ -1,4 +1,6 @@
 
+_________________SYMMETRIC CIPHERS_____________________
+
 hello.txt contient toujours : "Hello world"
 ===============================================================================
 1.
@@ -77,6 +79,9 @@ Commande : 	openssl enc -e -rc4 -in hello.txt -out hello1.enc
 		hello.txt contient maintenant : "Hdllo world"	comme prévu
 ===============================================================================
 7.
+
+		hello.txt : Hello world :
+		48 65 6c 6c 6f 20 77 6f 72 6c 64
 Commande : openssl rc4 -e -K 123456789 -in hello.txt -out ca.enc 
 			
 			ca.enc : 65 12 1c d8 91 f9 18 56 28 ab 02
@@ -87,14 +92,339 @@ Commande : openssl rc4 -e -K 123456789 -in hello.txt -out ca.enc
 			openssl rc4 -e -K 123456789 -in hello2.txt -out cb.enc
 			
 			cb.enc : 4a 18 1f d0 b3 b6 1d 57 33 a9 01
-			key.bin : hello.txt XOR ca.enc : 4ec7770b4fed96f395ac766
+			key.bin : hello.txt XOR ca.enc : 2d7770b4fed96f395ac766
 			
 			reconstruction : cb.enc xor key.bin  
-							: 4a66f6f644d6f726e696e67
-							
+			: 67 6f 6f 64 4d 6f 72 6e 69 6e 67
+			
+			On a réussi à reconstruire le fichier.
+===============================================================================
+8.
+
+		hello.txt : Hello world :
+		48 65 6c 6c 6f 20 77 6f 72 6c 64
+Commande : openssl rc4 -e -in hello.txt -out hello.enc -K 123456789	
+		   openssl rc4 -e -in hello.enc -out hello.txt -K 987456321
+		   
+		   résultat hello.txt : âLÓcN	¸ÿ
+ ===============================================================================
+9.
+
+		hello.txt : Hello world :
+		48 65 6c 6c 6f 20 77 6f 72 6c 64
+Commande :  openssl aes-128-ecb -e -in hello.txt -out hello1.enc
+			-pass pass:abcd1234       
+			openssl aes-128-ecb -e -in hello.txt -out hello2.enc
+			-pass pass:abcd1234 
+			
+	hello1.enc : 53 61 6c 74 65 64 5f 5f f9 50 ec
+	hello2.enc : 53 61 6c 74 65 64 5f 5f f9 50 ec
+ ===============================================================================
+10.      Commande : openssl aes-128-ecb -e -in hello.txt -out hello1.enc -pass pass:abcd1234 -nopad
+	résultat :
+Using -iter or -pbkdf2 would be better.
+bad decrypt
+9516:error:0607F08A:digital envelope routines:EVP_EncryptFinal_ex:data not
+ multiple of block length:crypto\evp\evp_enc.c:446: 
+
+Si on modifie hello.txt : Hello world 1234 ceci fonctionne
+  ===============================================================================
+11. 
+
+  CHANGE PLAIN TEXT LENGTH
+  1) hello1.txt : Hello world (NbBytes =11):
+    48 65 6c 6c 6f 20 77 6f 72 6c 64
+  Commande :  openssl aes-128-ecb -e -in hello1.txt -out hello1.enc 
+              -pass pass:abcd1234 -nosalt
+      ====> 	hello1.enc : b0 0f d8 94 e7 b6 68 75 63 b0 86 5f dc 01 11 f0
+                           NbByte = 16
+  1.2) hello2.txt : good Morning Swiss (NbBytes =19):
+    67 6f 6f 64 20 4d 6f 72 6e 69 6e 67 20 53 77 69
+    73 73
+  Commande :  openssl aes-128-ecb -e -in hello2.txt -out hello2.enc
+              -pass pass:abcd1234 -nosalt
+      ====> 	hello2.enc : 97 21 f4 61 06 d4 9c 87 b3 54 88 de f1 25 43 1c
+                           a2 ed 99 bd 02 c0 ac 8a 75 0b 64 b0 3b fb 73 5b
+                           NbBytes = 32
+   The second message is more than 16 bytes ==> padding on the second line
+   , we have 32 bytes.
+  
+ ===============================================================================
+12.
+  hello2.txt : good Morning Swiss (NbBytes =19):
+    67 6f 6f 64 20 4d 6f 72 6e 69 6e 67 20 53 77 69
+    73 73
+    ENCRYPTION :
+    Commande : openssl aes-128-ecb -e -in hello2.txt -out hello2.enc
+    -pass pass:123456789
+    
+    DECRYPTION :
+    Commande : openssl aes-128-ecb -d -in hello2.enc -out hello2.txt
+    -pass pass:123456789 -nopad
+    
+    avec -nopad on indique qu'il n'y a pas de padding donc lorsqu'on déchiffre
+    le texte on se retrouvera avec des bytes supplémentaires qui ont servi pour
+    le padding.
+    
+      hello2.txt : good Morning Swiss (NbBytes =19):
+    67 6f 6f 64 20 4d 6f 72 6e 69 6e 67 20 53 77 69
+    73 73 0e 0e 0e 0e 0e 0e 0e 0e 0e 0e 0e 0e 0e 0e
+    
+    les bytes 0e que nous retrouvons ici sont les bytes decryptés de padding.
+    
+    
+
+================================================================================
+13. 
+  hello1.txt : good Morning Swiss (NbBytes =19):
+    67 6f 6f 64 20 4d 6f 72 6e 69 6e 67 20 53 77 69
+    73 73
+  Commande :  openssl aes-128-ecb -e -in hello1.txt -out hello1.enc
+              -pass pass:abcd1234 -nosalt
+      ====> 	hello1.enc : 97 21 f4 61 06 d4 9c 87 b3 54 88 de f1 25 43 1c
+                           a2 ed 99 bd 02 c0 ac 8a 75 0b 64 b0 3b fb 73 5b
+                           NbBytes = 32  
+  
+  hello2.txt : food Morning Swiss (NbBytes =19):
+    66 6f 6f 64 20 4d 6f 72 6e 69 6e 67 20 53 77 69
+    73 73                        
+(67---->66) 8 ème bit changé
+  Commande :  openssl aes-128-ecb -e -in hello2.txt -out hello2.enc
+              -pass pass:abcd1234 -nosalt
+	      ====> 	hello2.enc : ef 16 55 32 ff 4a dd 63 c7 2f 7f 25 86 f2 ea d0
+                             a2 ed 99 bd 02 c0 ac 8a 75 0b 64 b0 3b fb 73 5b
+                           NbBytes = 32  
+    On voit bien que seul le bloc 2 est intacte, le premier bloc a subi
+    des changements
+ ===============================================================================
+14.
+
+  Commande1 : openssl aes-128-ecb -e -in hello2.txt -out hello2.enc
+  -pass pass:123456789 -nosalt -P
+  
+  Key1 :15E2B0D3C33891EBB0F1EF609EC41942
+  
+  SAME PASSPHRASE
+ Commande2 : openssl aes-128-ecb -e -in hello2.txt -out hello2.enc
+             -pass pass:123456789 -nosalt -P
+  
+  Key2 : 15E2B0D3C33891EBB0F1EF609EC41942
+  
+  DIFFERENT PASSPHRASE
+   Commande2 : openssl aes-128-ecb -e -in hello2.txt -out hello2.enc
+             -pass pass:987654321 -nosalt -P
+  
+  Key2 : 8A9BCF1E51E812D0AF8465A8DBCC9F74
+  ===============================================================================
+15.    
+    hello1.txt : Hello world
+    Commande :
+      openssl aes-128-cbc -e -in hello1.txt -out hello1.enc
+      -pass pass:abcd1234  
+      
+      1st time:
+      hello1.enc : 53616C7465645F5FD73F738D13C6B23D
+                   D9D079A068C5088607791E5F88EB49A2
+      
+      2nd time
+      hello1.enc : 53616C7465645F5F5F86DFD7C1CD48B4
+                   90209BBA1FDC9406C6E774919E19F552
+
+      We really see that the encrypted files are note similars.  
+  ===============================================================================
+16.   
+
+    hello1.txt : Hello world
+    
+    Commande : openssl aes-128-cbc -e -in hello1.txt -out hello1.enc
+    -K 123456789 -iv 80818283848586878889
+    
+    hello1.enc : 7EFF207A9DAE9E964186585010035CBC
+      
+    Commande : openssl aes-128-cbc -e -in hello1.txt -out hello2.enc
+    -K 987654321 -iv 80818283848586878889
+    
+    hello2.enc :  D032F123D5EFF7864FF1CD8CE386226D
+   
+     Commande : openssl aes-128-cbc -e -in hello1.txt -out hello3.enc
+    -K 123456789 -iv 70717273747576777879
+    
+    hello3.enc :  50DD2DCFD336FEBC39DB7CACE28F1D87
+
+  ===============================================================================
+17.  
+    hello1.txt : Hello world
+    
+    Commande : openssl aes-128-cbc -e -in hello1.txt -out hello1.enc
+    -K 123456789 -iv 80818283848586878889 
+      
+     hello1.enc : 7EFF207A9DAE9E964186585010035CBC
+                         ^
+                         |  A--->B
+     hello1.enc : 7EFF207A9DAE9E964286585010035CBC     
+      
+      openssl aes-128-cbc -d -in hello1.enc -out hello1.txt -K 123456789 -iv 80818283848586878889
+      hex string is too short, padding with zero bytes to length
+      hex string is too short, padding with zero bytes to length
+      bad decrypt
+      16020:error:06065064:digital envelope routines:EVP_DecryptFinal_ex:bad decrypt:crypto\evp\evp_enc.c:610:
+  ===============================================================================
+18.   
+
+  Commande1 : openssl aes-128-cbc -e -in hello2.txt -out hello2.enc
+              -pass pass:12345678900000000 -P -S 9876543210000000 -P
+  
+  
+  Key1 :810B52B9D51B522D83DB3D25A1E27299
+  IV1 : E17C751C232F165AF1E0FD0ACF6FE03C
+  
+  
+ Commande2 : openssl aes-128-cbc -e -in hello2.txt -out hello2.enc 
+              -pass pass:0000000123456789 -P -S 3692581470000000 -P
+  
+  Key2 : 15E2B0D3C33891EBB0F1EF609EC41942   
+  IV2 :  8D351ABE99BEB81135BAA67DC64D6C96  
+  ===============================================================================
+  
+_________________DIGEST_____________________
+  
+  
+  ===============================================================================
+1.   hello1.txt : Hello world
+      MD5(hello1.txt)= 3e25960a79dbc69b674cd4ec67a72c62
+    
+       hello2.txt : Iello world
+      MD5(hello2.txt)= d075ee996cc948778095f018051d6f4c
+      
+     On voit que les les 2 hash sont complètement différents même si seul un 
+     bit a été changé.
+  ===============================================================================
+2.     
+  Un exemple pour illustrer ceci :
+  
+  Lors de l'envoi d'un e-mail entre A et B, A écrit un e-mail et l'envoi à B
+  avec le calcul du digest. 
+  Si un acteur C intercèpte le message, le modifie et recalcul le digest. Il lui
+  suffit de renvoyer ces informations et lorsque B voudra vérifier l'integrité 
+  du message il ne s'appercevra d'aucune différence de celui envoyé par A.
+  
+  Car il va calculer le digest et s'appercevoir qu'il est le même que celui qu'il
+  a reçu.
+  ===============================================================================
+3.   1) content : Hello world
+        key = salut
+        HMAC-MD5(hello.txt)= 65f16f07b292f06fc2e47396da4d6320
+      
+    2) content : Hello hell
+       key = salut
+       HMAC-MD5(hello.txt)= e467a2a13b6c523ec68545b37d7bbbb5
+       
+    3) content : Hello world
+       key = aurevoir
+       HMAC-MD5(hello.txt)= b7fdac2b4eb86471223aa4b0d4c21baa
+       
+       On voit qu'en changeant la clef ou le texte le HMAC change.
+  ===============================================================================
+4.       
+  Ici si on reprend l'exemple 2, si C modifie le message, comme il ne peut pas
+  accéder au digest car il est protégé par un pass, B verra une différence lors
+  du calcul de son digest.
+  
+  pour encrypter il suffit de rajouter -hmac par exemple :
+  
+   openssl dgst -md5  -hmac aurevoir  -out hello.sha hello.txt
+   encrypte le digest créer par le md5 du text de hello.txt et le stock
+   dans hello.sha.
+  ===============================================================================
+5.   hello.txt : Hello world 
+
+    Commande : openssl aes-128-cbc  -e -in hello.txt -out hello.enc
+        -pass pass:12345678900000000 -S 1234567891123456 -p
+        
+        salt=1234567891123456
+        key=7D23C6F744F8EA7161C035F015492A37
+        iv =C06A4A8C9896BD630319DCD7EFEA277F
+        
+    hash : openssl dgst -md5 -hmac 7D23C6F744F8EA7161C035F015492A37 hello1.enc
+          HMAC-MD5(hello1.enc)= 8201c72de556d88ac6933023d8bf6cd1
+  ===============================================================================
+6.   Verify integrity is the same than before :
+    openssl dgst -md5 -hmac 7D23C6F744F8EA7161C035F015492A37 hello1.enc
+          HMAC-MD5(hello1.enc)= 8201c72de556d88ac6933023d8bf6cd1
           
-          
-          
-          
-          
-          
+        Commande : openssl aes-128-cbc  -d -in hello.txt -out hello.enc
+        -pass pass:12345678900000000 -S 1234567891123456 -p     
+        
+================================================================================
+
+________________________________ASSYMETRIC CIPHERS______________________________
+
+1. privateKey : openssl genrsa  -out privatKey.pem 2048
+   publicKey : openssl rsa -in privatKey.pem -out publicKey.pem -pubout
+  
+   public modulus &
+  modulus Private :   00:b9:57:4a:f1:05:a7:7d:b2:28:59:7c:9b:f3:0a:
+                      86:14:76:b6:ba:1c:5d:5f:48:53:5d:fd:80:33:d6:
+                      c0:61:ff:9c:98:0d:18:7a:a7:2d:51:1a:47:3e:72:
+                      5b:93:b9:7e:9f:d5:94:50:7e:7c:32:23:26:b5:c9:
+                      d3:04:e0:44:76:de:28:ea:c8:0b:07:ea:f7:8c:bf:
+                      fa:70:52:7c:72:53:8b:27:0c:8b:29:01:fa:2d:50:
+                      43:8b:b8:92:d4:92:71:f7:4a:ad:9f:0d:ff:95:98:
+                      06:30:72:58:f9:18:7a:ee:e7:6c:30:85:5f:97:b3:
+                      73:0d:76:3c:63:b0:34:05:27:0d:c9:a8:68:b3:22:
+                      d1:99:4c:0d:85:37:40:74:75:89:b8:48:0e:92:6b:
+                      d6:70:c4:09:c1:89:b3:77:1c:3c:5c:a6:e6:c0:b0:
+                      aa:4b:d4:86:1f:52:d5:51:11:63:dc:0e:9e:d6:f2:
+                      64:e6:3f:18:ab:09:d7:31:b8:1b:1a:cc:60:83:66:
+                      6f:60:89:19:4f:a1:fd:6d:cb:ee:1d:8b:86:72:ba:
+                      e0:2e:59:a5:d1:df:69:8f:e8:72:90:89:a0:68:b5:
+                      0d:63:4b:d6:6d:68:36:2a:93:fd:be:a2:cc:b6:8b:
+                      70:15:bb:be:ac:33:bf:7c:35:d8:2d:ff:be:cb:e2:
+                      63:3b
+                      
+  exponent private :  00:8d:5b:46:8d:0d:02:f1:9b:2f:ab:10:9e:e0:7e:
+                      e6:44:35:46:a8:2b:7a:0b:71:de:23:91:74:76:15:
+                      14:25:aa:0e:84:e9:78:02:13:ff:3c:1c:0e:ba:51:
+                      fe:06:6d:33:66:34:3f:2a:25:4e:13:ef:3b:56:ea:
+                      d7:46:a0:c5:96:e3:59:d1:b7:40:b2:89:42:c4:d6:
+                      a6:eb:83:fd:e6:34:51:ad:36:a3:ec:62:d5:ac:39:
+                      cb:4a:85:3b:77:65:3a:06:a1:ae:49:e1:23:4d:b4:
+                      e5:03:8e:32:cd:c9:1d:f9:98:07:ab:fa:0d:2e:66:
+                      6f:19:95:53:f9:b4:29:f8:c2:c2:ce:dc:8f:84:30:
+                      2f:bb:33:c0:11:1b:a9:d4:c9:34:81:18:05:4d:a4:
+                      08:b2:ce:cc:03:5b:70:b6:b4:af:48:3c:ed:fa:30:
+                      9a:c9:43:7f:95:a6:8d:26:4d:d2:4d:cc:11:af:3f:
+                      3d:9e:1e:e6:90:6e:8c:52:5a:f0:cc:49:36:0b:2d:
+                      92:db:61:44:f3:b1:11:33:ec:4f:2f:17:32:51:7f:
+                      5b:f5:c8:0a:22:cd:02:bc:6a:23:f9:10:a2:3d:d9:
+                      72:c8:e7:dc:23:14:fa:93:b7:bd:4b:5e:a0:72:8e:
+                      0b:40:8b:b7:b6:d3:e3:9c:b8:96:79:4a:a8:39:d0:
+                      5c:01      
+
+    
+
+  public exponent : 65537
+  ===============================================================================
+2. secret key : openssl rand -out secretKey.key 128
+   privatekey : openssl genrsa -out privateKey.pem 4096
+   public key : openssl rsa -in privateKey.pem -out publicKey.pem -pubout
+   encryption : openssl pkeyutl -encrypt -in secretKey.key -pubin 
+                -inkey publicKey.pem -out cipher.bin
+  ===============================================================================
+3. Decryption :openssl pkeyutl -decrypt -in cipher.bin -inkey 
+              privateKey.pem -out decrypt.txt
+  ===============================================================================
+4.
+Private key : openssl genrsa -aes128 -passout pass:salut -out privateKey.pem 4096
+Public key : openssl rsa -in privateKey.pem -passin pass:salut -pubout -out publicKey.pem
+Sign : openssl dgst -sha256 -sign privateKey.pem -out hello.sign hello.txt
+  ===============================================================================
+5. Verify dgst -sha256 -verify publicKey.pem -signature hello.sign hello.txt
+
+  Output : Verified OK
+    ===============================================================================
+6. Verify dgst -sha256 -verify publicKey.pem -signature hello.sign hello1.txt
+
+  Output : Verification Failure
+  
+  ici hello.txt a été changé avec hello1.txt.
